@@ -37,6 +37,8 @@ configuration for the OAuth2 provider:
 
 * `oauth2_token_url` - your provider's token URL.
 
+* `oauth2_redirect_uri` - The full callback url specified on the idP
+
 If you can't figure out the values for the above settings, check the
 developer documentation from your provider or contact their customer
 support.
