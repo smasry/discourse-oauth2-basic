@@ -14,7 +14,7 @@ class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
       id: access_token['id']
     }
   end
-  option :token_params, { redirect_uri: SiteSettings.oauth2_redirect_uri }
+  option :token_params, { redirect_uri: SiteSetting.oauth2_redirect_uri }
 end
 
 class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
