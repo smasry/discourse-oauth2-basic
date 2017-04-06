@@ -14,7 +14,6 @@ class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
       id: access_token['id']
     }
   end
-  option :token_params, { redirect_uri: SiteSetting.oauth2_redirect_uri }
 end
 
 class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
@@ -35,6 +34,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
                           token_url: token_url
                         }
                         opts[:authorize_options] = SiteSetting.oauth2_authorize_options.split("|").map(&:to_sym)
+                        opts[:token_params][:redirect_uri] = SiteSetting.oauth2_redirect_uri unless SiteSetting.oauth2_redirect_uri.blank?
 
                         if SiteSetting.oauth2_send_auth_header?
                           opts[:token_params] = {headers: {'Authorization' => basic_auth_header }}
