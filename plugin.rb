@@ -113,7 +113,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
   end
 
   def after_create_account(user, auth)
-    ::PluginStore.set("oauth2_basic", "oauth2_basic_user_#{auth[:extra_data][:oauth2_basic_user_id]}", {user_id: user.id })
+    ::PluginStore.set("oauth2_basic", "oauth2_basic_user_#{user_md5_hash}", {user_id: user.id })
   end
 
   def username_suggestion(name)
