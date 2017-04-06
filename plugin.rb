@@ -4,8 +4,8 @@
 # authors: Robin Ward
 
 require_dependency 'auth/oauth2_authenticator.rb'
-
 enabled_site_setting :oauth2_enabled
+require 'site_setting'
 
 class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
   option :name, "oauth2_basic"
