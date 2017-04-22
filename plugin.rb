@@ -3,8 +3,10 @@
 # version: 0.2
 # authors: Robin Ward
 
+require 'rest-client'
 require_dependency 'auth/oauth2_authenticator.rb'
 enabled_site_setting :oauth2_enabled
+
 
 class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
   option :name, "oauth2_basic"
@@ -67,12 +69,27 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     Rails.logger.warn("OAuth2 Debugging: #{info}") if SiteSetting.oauth2_debug_auth
   end
 
-  def fetch_user_details(token, id)
+  def fetch_user_details(auth_result, token, id)
     user_json_url = SiteSetting.oauth2_user_json_url.sub(':token', token.to_s).sub(':id', id.to_s)
 
     log("user_json_url: #{user_json_url}")
+    response = RestClient.get(
+      user_json_url, 'Authorization' => "Bearer #{token}",
+      'Accept' => SiteSetting.oauth2_token_accept ) do |response, request, result, &block|
+        if response.code == 200
+          response.return!(request, result, &block)
+        elsif response.code == 401
+          auth_result.failed = true
+          auth_result.failed_reason = JSON.parse(response.body)['error']['message']
+        else
+          auth_result.failed = true
+          auth_result.failed_reason = "Unkown Error occured"
+        end
+      end
 
-    user_json = JSON.parse(open(user_json_url, 'Authorization' => "Bearer #{token}", 'Accept' => SiteSetting.oauth2_token_accept).read)
+    return auth_result if auth_result.failed?
+
+    user_json = JSON.parse(response.body)
 
     log("user_json: #{user_json}")
 
@@ -91,8 +108,12 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
 
     result = Auth::Result.new
     token = auth['credentials']['token']
-    user_details = fetch_user_details(token, auth['info'][:id])
+    user_details = fetch_user_details(result, token, auth['info'][:id])
+
+    return result if result.failed?
+
     user_md5_hash = Digest::MD5.hexdigest(user_details[:email])
+
     result.name = user_details[:name]
     result.username = username_suggestion(user_details[:name])
     result.email = user_details[:email]
