@@ -3,10 +3,8 @@
 # version: 0.2
 # authors: Robin Ward
 
-require 'rest-client'
 require_dependency 'auth/oauth2_authenticator.rb'
 enabled_site_setting :oauth2_enabled
-
 
 class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
   option :name, "oauth2_basic"
@@ -73,19 +71,26 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     user_json_url = SiteSetting.oauth2_user_json_url.sub(':token', token.to_s).sub(':id', id.to_s)
 
     log("user_json_url: #{user_json_url}")
-    response = RestClient.get(
-      user_json_url, 'Authorization' => "Bearer #{token}",
-      'Accept' => SiteSetting.oauth2_token_accept ) do |response, request, result, &block|
-        if response.code == 200
-          response.return!(request, result, &block)
-        elsif response.code == 401
-          auth_result.failed = true
-          auth_result.failed_reason = JSON.parse(response.body)['error']['message']
-        else
-          auth_result.failed = true
-          auth_result.failed_reason = "Unkown Error occured"
-        end
+
+    response = Excon.get(
+      user_json_url,
+      headers: {
+        "Authorization" => "Bearer #{token}",
+        'Accept' => SiteSetting.oauth2_token_accept
+      }
+    )
+
+    status = response.status
+
+    if status != 200
+      auth_result.failed = true
+
+      if status == 401
+        auth_result.failed_reason = JSON.parse(response.body)['error']['message']
+      else
+        auth_result.failed_reason = "Unkown Error occured"
       end
+    end
 
     return auth_result if auth_result.failed?
 
