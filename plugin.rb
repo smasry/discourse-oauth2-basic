@@ -1,7 +1,8 @@
 # name: discourse-oauth2-basic
 # about: Generic OAuth2 Plugin
 # version: 0.2
-# authors: Robin Ward
+# authors: Robin Ward, Samer Masry
+# url: https://github.com/smasry/discourse-oauth2-basic.git
 
 require_dependency 'auth/oauth2_authenticator.rb'
 enabled_site_setting :oauth2_enabled
@@ -128,7 +129,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
     elsif SiteSetting.oauth2_email_verified?
-      result.user = User.where(email: Email.downcase(result.email)).first
+      result.user = User.find_by_email(result.email).first
       if result.user && user_details[:email]
         ::PluginStore.set("oauth2_basic", "oauth2_basic_user_#{user_md5_hash}", {user_id: result.user.id})
       end
